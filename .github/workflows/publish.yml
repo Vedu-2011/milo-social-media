@@ -1,0 +1,28 @@
+name: publish-instagram
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 6:00 PM ET daily (EDT)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "dry run (list due posts, publish nothing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: publish due posts
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python3 publish.py --dry-run
+          else
+            python3 publish.py
+          fi
