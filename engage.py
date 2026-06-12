@@ -45,6 +45,26 @@ def api(path, params=None, method="GET"):
         return {}
 
 
+def api_json(path, payload):
+    tok = os.environ["IG_TOKEN"].strip()
+    req = urllib.request.Request(
+        f"{API}{path}?access_token={urllib.parse.quote(tok)}",
+        data=json.dumps(payload).encode(), method="POST",
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        print(f"API {e.code} on {path}: {e.read().decode()[:200]}", file=sys.stderr)
+        return {}
+
+
+DM_TEMPLATES = [
+    "hey @{u}! saw your comment 🙂 here's milo: https://milo-ai-info.vercel.app — free forever, no caps. built it because quizlet wanted $45/yr. if it saves your grade, tell your group chat about us 🫡",
+    "yo @{u}! link you asked about: https://milo-ai-info.vercel.app — 100% free forever. paste your notes, get flashcards + a quiz. made by a student, for students 🙂",
+]
+
+
 def main():
     state = json.loads(STATE.read_text()) if STATE.exists() else {"replied": []}
     replied = set(state["replied"])
@@ -67,8 +87,12 @@ def main():
                 res = api(f"/{c['id']}/replies", {"message": matched}, "POST")
                 if res.get("id"):
                     replied.add(c["id"]); replies_sent += 1
-                    notify.append((c.get("username"), c.get("text",""), m.get("permalink",""), "auto-replied"))
-                    print(f"replied to @{c.get('username')}: {text[:60]!r}")
+                    dm = DM_TEMPLATES[hash(c["id"]) % len(DM_TEMPLATES)].format(u=c.get("username", "there"))
+                    dm_res = api_json("/me/messages",
+                        {"recipient": {"comment_id": c["id"]}, "message": {"text": dm}})
+                    status = "auto-replied + DM'd" if dm_res.get("message_id") else "auto-replied (DM failed)"
+                    notify.append((c.get("username"), c.get("text",""), m.get("permalink",""), status))
+                    print(f"replied to @{c.get('username')}: {text[:60]!r} [{status}]")
             elif not matched:
                 replied.add(c["id"])  # don't re-log next run
                 notify.append((c.get("username"), c.get("text",""), m.get("permalink",""), "NEEDS YOU"))
