@@ -48,9 +48,9 @@ def api(path, params=None, method="GET"):
 def main():
     state = json.loads(STATE.read_text()) if STATE.exists() else {"replied": []}
     replied = set(state["replied"])
-    new_log, replies_sent = [], 0
+    new_log, replies_sent, notify = [], 0, []
 
-    media = api("/me/media", {"fields": "id,caption,timestamp", "limit": "10"}).get("data", [])
+    media = api("/me/media", {"fields": "id,caption,permalink,timestamp", "limit": "10"}).get("data", [])
     for m in media:
         comments = api(f"/{m['id']}/comments",
                        {"fields": "id,text,username,timestamp", "limit": "50"}).get("data", [])
@@ -67,10 +67,12 @@ def main():
                 res = api(f"/{c['id']}/replies", {"message": matched}, "POST")
                 if res.get("id"):
                     replied.add(c["id"]); replies_sent += 1
+                    notify.append((c.get("username"), c.get("text",""), m.get("permalink",""), "auto-replied"))
                     print(f"replied to @{c.get('username')}: {text[:60]!r}")
             elif not matched:
                 replied.add(c["id"])  # don't re-log next run
-                new_log.append(f"- **@{c.get('username')}** on {m['id'][-6:]}: {c.get('text','')[:140]}")
+                notify.append((c.get("username"), c.get("text",""), m.get("permalink",""), "NEEDS YOU"))
+                new_log.append(f"- **@{c.get('username')}** on {m.get('permalink','')}: {c.get('text','')[:140]}")
 
     state["replied"] = sorted(replied)[-2000:]
     STATE.write_text(json.dumps(state))
@@ -78,6 +80,22 @@ def main():
         prev = LOG.read_text() if LOG.exists() else "# Comments needing a human reply\n"
         LOG.write_text(prev + "\n" + "\n".join(new_log) + "\n")
     print(f"done: {replies_sent} auto-replies, {len(new_log)} flagged for human")
+
+    if notify and os.environ.get("GH_NOTIFY_TOKEN"):
+        lines = [f"@Vedu-2011 — {len(notify)} new comment(s):", ""]
+        for user, text, link, status in notify:
+            lines.append(f"- **@{user}** ({status}): \"{text[:160]}\" — [post]({link})")
+        body = json.dumps({"body": "\n".join(lines)})
+        req = urllib.request.Request(
+            "https://api.github.com/repos/Vedu-2011/milo-social-media/issues/1/comments",
+            data=body.encode(), method="POST",
+            headers={"Authorization": f"Bearer {os.environ['GH_NOTIFY_TOKEN']}",
+                     "Accept": "application/vnd.github+json"})
+        try:
+            urllib.request.urlopen(req)
+            print(f"notified inbox issue ({len(notify)} comments)")
+        except urllib.error.HTTPError as e:
+            print("notify failed:", e.read().decode()[:200], file=sys.stderr)
 
     subprocess.run(["git", "add", "-A"], cwd=ROOT)
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:

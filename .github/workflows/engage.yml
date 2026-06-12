@@ -10,6 +10,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   engage:
@@ -19,4 +20,5 @@ jobs:
       - name: reply to FAQ comments
         env:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_NOTIFY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 engage.py
