@@ -79,12 +79,13 @@ def main():
         LOG.write_text(prev + "\n" + "\n".join(new_log) + "\n")
     print(f"done: {replies_sent} auto-replies, {len(new_log)} flagged for human")
 
-    subprocess.run(["git", "config", "user.name", "milo-engage"], cwd=ROOT)
-    subprocess.run(["git", "config", "user.email", "bot@milo"], cwd=ROOT)
     subprocess.run(["git", "add", "-A"], cwd=ROOT)
-    subprocess.run(["git", "commit", "-qm", "engage: state update", "--allow-empty"], cwd=ROOT)
-    subprocess.run(["git", "pull", "--rebase", "-q"], cwd=ROOT)
-    subprocess.run(["git", "push", "-q"], cwd=ROOT)
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:
+        subprocess.run(["git", "config", "user.name", "milo-engage"], cwd=ROOT)
+        subprocess.run(["git", "config", "user.email", "bot@milo"], cwd=ROOT)
+        subprocess.run(["git", "commit", "-qm", "engage: state update"], cwd=ROOT)
+        subprocess.run(["git", "pull", "--rebase", "-q"], cwd=ROOT)
+        subprocess.run(["git", "push", "-q"], cwd=ROOT)
 
 
 if __name__ == "__main__":

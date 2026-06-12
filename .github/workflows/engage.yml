@@ -1,8 +1,12 @@
 name: engage-comments
 on:
   schedule:
-    - cron: "0 2,5,8,14,17,20,23 * * *"   # every ~3h through US evening + IST morning
+    - cron: "*/10 * * * *"   # every 10 minutes, 24/7
   workflow_dispatch:
+
+concurrency:
+  group: engage
+  cancel-in-progress: false
 
 permissions:
   contents: write
