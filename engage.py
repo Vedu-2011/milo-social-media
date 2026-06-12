@@ -17,15 +17,15 @@ MAX_REPLIES = 15
 
 FAQS = [
     (("is it free", "it's free?", "actually free", "free??", "free?"), [
-        "100% free, no caps, no card — that's the whole point 🙂",
-        "free forever. a student built it because $45/yr to study is insane",
+        "100% free, no caps, no card 🙂 follow @heymilo999 to watch us take on quizlet — link in bio",
+        "free forever — a student built it bc $45/yr to study is insane. follow for the war updates 🙂",
     ]),
     (("what app", "which app", "what's the app", "whats the app", "app name", "name of the app"), [
-        "milo 🙂 link in bio — free forever",
-        "it's milo — milo-ai-info.vercel.app, free forever",
+        "milo 🙂 free forever — follow @heymilo999 + link in bio",
+        "it's milo! follow us for more free study stuff — link in bio 🙂",
     ]),
     (("link", "website", "site?"), [
-        "milo-ai-info.vercel.app 🙂 free forever",
+        "link in bio 🙂 follow @heymilo999 so you don't lose it — free forever",
     ]),
 ]
 
