@@ -60,8 +60,8 @@ def api_json(path, payload):
 
 
 DM_TEMPLATES = [
-    "hey @{u}! saw your comment 🙂 here's milo: https://milo-ai-info.vercel.app — free forever, no caps. built it because quizlet wanted $45/yr. if it saves your grade, tell your group chat about us 🫡",
-    "yo @{u}! link you asked about: https://milo-ai-info.vercel.app — 100% free forever. paste your notes, get flashcards + a quiz. made by a student, for students 🙂",
+    "hey{u}! saw your comment 🙂 here's milo: https://milo-ai-info.vercel.app — free forever, no caps. built it because quizlet wanted $45/yr. if it saves your grade, tell your group chat about us 🫡",
+    "yo{u}! link you asked about: https://milo-ai-info.vercel.app — 100% free forever. paste your notes, get flashcards + a quiz. made by a student, for students 🙂",
 ]
 
 
@@ -87,7 +87,9 @@ def main():
                 res = api(f"/{c['id']}/replies", {"message": matched}, "POST")
                 if res.get("id"):
                     replied.add(c["id"]); replies_sent += 1
-                    dm = DM_TEMPLATES[hash(c["id"]) % len(DM_TEMPLATES)].format(u=c.get("username", "there"))
+                    uname = c.get("username", "")
+                    u_str = f" @{uname}" if uname else ""
+                    dm = DM_TEMPLATES[hash(c["id"]) % len(DM_TEMPLATES)].format(u=u_str)
                     dm_res = api_json("/me/messages",
                         {"recipient": {"comment_id": c["id"]}, "message": {"text": dm}})
                     status = "auto-replied + DM'd" if dm_res.get("message_id") else "auto-replied (DM failed)"
