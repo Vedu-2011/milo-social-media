@@ -17,15 +17,15 @@ MAX_REPLIES = 15
 
 FAQS = [
     (("is it free", "it's free?", "actually free", "free??", "free?"), [
-        "100% free, no caps, no card 🙂 follow @heymilo999 to watch us take on quizlet — link in bio",
-        "free forever — a student built it bc $45/yr to study is insane. follow for the war updates 🙂",
+        "just sent the details to your DMs 💌 100% free forever, no caps — follow @heymilo999 so you don't lose it 👀",
+        "free forever — DMing you why a student built it to take on quizlet's $45/yr 🙂 follow so you catch the war updates",
     ]),
     (("what app", "which app", "what's the app", "whats the app", "app name", "name of the app"), [
-        "milo 🙂 free forever — follow @heymilo999 + link in bio",
-        "it's milo! follow us for more free study stuff — link in bio 🙂",
+        "it's milo 🙂 just DMed you the link — follow @heymilo999 so it doesn't get buried 👀",
+        "milo! sliding the link into your DMs now 💌 follow us for more free study stuff",
     ]),
     (("link", "website", "site?"), [
-        "link in bio 🙂 follow @heymilo999 so you don't lose it — free forever",
+        "sent it to your DMs 💌 follow @heymilo999 so you don't lose the link — free forever",
     ]),
 ]
 
@@ -43,6 +43,21 @@ def api(path, params=None, method="GET"):
     except urllib.error.HTTPError as e:
         print(f"API {e.code} on {path}: {e.read().decode()[:200]}", file=sys.stderr)
         return {}
+
+
+def api_all(path, params=None, cap=1000):
+    """GET every page via cursor pagination; returns the full data list.
+    Used so the bot backfills ALL posts/comments, not just the most recent."""
+    out, params = [], dict(params or {})
+    while True:
+        resp = api(path, params)
+        rows = resp.get("data", [])
+        out.extend(rows)
+        after = resp.get("paging", {}).get("cursors", {}).get("after")
+        if not rows or not after or len(out) >= cap:
+            break
+        params["after"] = after
+    return out
 
 
 def api_json(path, payload):
@@ -70,10 +85,10 @@ def main():
     replied = set(state["replied"])
     new_log, replies_sent, notify = [], 0, []
 
-    media = api("/me/media", {"fields": "id,caption,permalink,timestamp", "limit": "10"}).get("data", [])
+    media = api_all("/me/media", {"fields": "id,caption,permalink,timestamp", "limit": "50"})
     for m in media:
-        comments = api(f"/{m['id']}/comments",
-                       {"fields": "id,text,username,timestamp", "limit": "50"}).get("data", [])
+        comments = api_all(f"/{m['id']}/comments",
+                           {"fields": "id,text,username,timestamp", "limit": "50"})
         for c in comments:
             if c["id"] in replied or c.get("username") == OWN:
                 continue
