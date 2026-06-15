@@ -1,0 +1,32 @@
+name: refresh-ig-token
+on:
+  schedule:
+    - cron: "0 4 */10 * *"   # every 10 days — keeps the 60-day token perpetually alive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: refresh token and rotate the IG_TOKEN secret
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          NEW=$(python3 refresh_token.py --print)
+          if [ -z "$NEW" ]; then
+            echo "refresh produced no token — leaving current secret untouched"
+            exit 1
+          fi
+          if [ -z "$GH_PAT" ]; then
+            echo "GH_PAT not set — token refreshed but secret NOT rotated."
+            echo "Add a fine-grained PAT (Secrets: read+write on this repo) as the"
+            echo "GH_PAT secret to make this fully hands-off."
+            exit 0
+          fi
+          echo "$NEW" | GH_TOKEN="$GH_PAT" gh secret set IG_TOKEN --repo Vedu-2011/milo-social-media
+          echo "IG_TOKEN secret rotated successfully"
